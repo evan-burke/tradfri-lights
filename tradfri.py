@@ -102,14 +102,14 @@ def set_bulb_attributes(entity_id = None, attrs = None):
     """
     
     if not entity_id and not "entity_id" in attrs:
-        print("error: function needs an entity_id as input somewhere")
+        print("error: set_bulb_attributes() function needs an entity_id as input somewhere")
         time.sleep(2)
         return 0
     
     if entity_id and attrs: 
-        # create new dict containing both. may require python 3.5+
-        attrs = {"entity_id": entity_id }
-
+        attrs["entity_id"] = entity_id
+        if debug > 1: print("set_bulb_attributes() attrs:", attrs)
+       
     data = apireq("services/light/turn_on", "post", attrs)
     # this doesn't usually return anyything other than http response code, but return just in case. 
     # This is a 'requests' response. 
