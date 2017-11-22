@@ -175,12 +175,11 @@ def transition(entity_id, new_attr, duration, start_time=None):
             data = set_color(entity_id, attrs)
         return data
     
-    print("time until start", time_until_start)
+    if debug > 0: print("time until start", time_until_start)
     time.sleep(time_until_start.total_seconds() - 0.1)
+    if debug > 0: print("starting transition")
     
     step_sleep = MIN_STEP_DURATION.total_seconds()
-
-    if debug > 0: print("starting transition")
     
     for n, i in enumerate(plan['plan']):
         if debug > 0: print(str(n)+", ", end="")
