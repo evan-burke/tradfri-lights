@@ -3,6 +3,13 @@ import json
 import math
 import time
 import datetime
+from pprint import pprint
+
+
+# Welp. I may have needlessly rewritten this - https://home-assistant.io/components/switch.flux/
+# Though - it isn't perfect anyway.
+#   - https://community.home-assistant.io/t/improving-the-fluxer/23729
+
 
 # HomeAssistant base API URL.
 API_URL = "http://192.168.132.162:8123/api/"
@@ -41,6 +48,7 @@ def apireq(endpoint, req_type = "get", post_data = None):
     else:
         print("unsupported http type: ", req_type)
         return 0
+
 
 def get_bulb_state(entity_id):
     """Low level function. Returns entire state array."""
@@ -156,6 +164,7 @@ def transition(entity_id, new_attr, duration, start_time=None):
         Otherwise, sleeps until start_time.
         
         """
+
     plan = plan_transition(entity_id, new_attr, duration, start_time)
     
     if not plan:
