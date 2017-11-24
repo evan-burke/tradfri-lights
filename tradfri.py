@@ -128,7 +128,7 @@ class Tradfri(object):
             return attrs['brightness']
 
 
-    def set_attributes(self, attrs = None):
+    def set_attributes(self, attrs):
         """ Low-level function.
         Attrs is a dict containing attr(s) to set. e.g.: {'brightness': 92}
         """
