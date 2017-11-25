@@ -13,11 +13,13 @@ import dateutil.parser
 
 devices = { 
 	"office_table": { 
-		"entity_id": "light.tradfri_bulb_e26_ws_opal_980lm"
+#		"entity_id": "light.tradfri_bulb_e26_ws_opal_980lm"
+		"entity_id": "light.980_e26"
 	},
 
 	"geo_desk": {
-		"entity_id": "light.tradfri_bulb_e12_ws_opal_400lm_2"
+#		"entity_id": "light.tradfri_bulb_e12_ws_opal_400lm_2"
+		"entity_id": "light.400_e12"
 	}
 }
 
@@ -117,11 +119,12 @@ from pprint import pprint
 print("args:")
 pprint(args)
 print("")
-print("params:")
-print(args.params)
-print("")
+if args.params:
+	print("params:")
+	print(args.params)
+	print("")
 
-
+#print("creating instance for friendly name:", args.device, "id", devices[args.device]['entity_id'])
 device = Tradfri(devices[args.device]['entity_id'], debug=args.verbose)
 
 #pprint(device.get_attrs())
