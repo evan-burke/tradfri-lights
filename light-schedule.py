@@ -121,9 +121,6 @@ print("params:")
 print(args.params)
 print("")
 
-new_attr, duration, start_time = parse_transition_params(args.params)
-
-
 
 device = Tradfri(devices[args.device]['entity_id'], debug=args.verbose)
 
