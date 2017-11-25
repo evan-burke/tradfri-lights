@@ -85,6 +85,7 @@ class Tradfri(object):
         state = self.get_state()
         if state['state'] == 'on':
             self.attrs = state['attributes']
+            self.attrs['kelvin'] = self.mireds_to_kelvin(self.attrs['color_temp'])
             return self.attrs
         else:
             print('light is not on; unable to retrieve attributes')
