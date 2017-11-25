@@ -44,7 +44,7 @@ class Tradfri(object):
         
         try:
             if "Entity not found" in self.state['message']:
-                errstr = "Error creating instance: " + state['message']
+                errstr = "Error creating instance: " + self.state['message']
                 print(errstr)
                 raise Exception(errstr)
         except KeyError:
@@ -128,7 +128,7 @@ class Tradfri(object):
             return attrs['brightness']
 
 
-    def set_attributes(self, attrs = None):
+    def set_attributes(self, attrs):
         """ Low-level function.
         Attrs is a dict containing attr(s) to set. e.g.: {'brightness': 92}
         """
