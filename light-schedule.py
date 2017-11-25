@@ -7,9 +7,8 @@ import argparse
 import dateutil.parser
 
 
-#import json
 
-#Define your tradfri devices here by friendly name and HomeAssistant entity id.
+### Define your tradfri devices here by friendly name and HomeAssistant entity id.
 
 devices = { 
 	"office_table": { 
@@ -22,6 +21,16 @@ devices = {
 		"entity_id": "light.400_e12"
 	}
 }
+
+
+
+transition_supported_attrs = ['brightness','color_temp']
+transition_supported_durations = ['second','seconds','minute','minutes','hour','hours']
+
+
+# Debug switch for this script. separate from tradfri.py debug switch.
+debug = 0
+
 
 # --------------
 
@@ -38,14 +47,10 @@ parser.add_argument("device", help="Friendly name of the device to update.")
 parser.add_argument("action", help="Action to take on the specified device. See tradfri.py for supported actions.")
 parser.add_argument("params", nargs='*', default=None, help="Parameters for the specified action.")
 parser.add_argument("--verbose", "-v", default=0, type=int, choices=[1,2], help="Increase verbosity of output.")
-
-#subparser = parser.add_subparsers(help='zyx')
-#parser_transition = subparser.add_parser('transition')
-
 args = parser.parse_args()
 
 # Most common actions:
-acts = """
+actions = """
 check_if_on()
 get_temp_kelvin()
 get_brightness()
@@ -58,14 +63,12 @@ toggle()
 
 # Transition is the special case. 
 # Need to parse new_attr, duration, and start_time.
-# This is not the right way to do it, because argparse will probably do a better job at this sort of thing. 
+# This is... not the right way to do it, because argparse will probably do a better job at this sort of thing. 
 # Plus, delimiting values by '=' doesn't match the param format in argparse.
 
 # example:
 # python3 light-schedule.py geo_desk transition color_temp=3200 seconds=7 start_time=5:23
 
-transition_supported_attrs = ['brightness','color_temp']
-transition_supported_durations = ['second','seconds','minute','minutes','hour','hours']
 
 def parse_transition_params(params):
 	# parse new setting / attr:
@@ -77,6 +80,7 @@ def parse_transition_params(params):
 		new_attr = { attr[0]: int(attr[1]) }
 		#value = attr[1]
 
+
 	# parse transition duration
 	dur = params[1].replace(" ", "").split("=")
 	if dur[0] not in transition_supported_durations:
@@ -84,75 +88,65 @@ def parse_transition_params(params):
 		quit()
 	else:
 		dur_unit = dur[0]
-		print('durval:', dur[1])
 		if 'second' in dur_unit:
 			dur_value = int(dur[1])
 		elif 'minute' in dur_unit:
 			dur_value = int(dur[1]) * 60
 		elif 'hour' in dur_unit:
 			dur_value = int(dur[1]) * 60 * 60
-		print('durval2', dur_value)
 		duration = datetime.timedelta(seconds=dur_value)
 
 	# if present, parse start time
 	try:
 		if 'start_time' in params[2]:
 			_p2 = params[2].replace(" ", "").split("=")
-			print("params2:", params[2], "p2:",  _p2)
+			#print("params2:", params[2], "p2:",  _p2)
 			start_time = dateutil.parser.parse(_p2[1])
 	except:
-		print("except blockq")
+		#print("except block for start_time")
 		start_time = None
 	
-	print("parsed values:")
-	print(new_attr)
-	print(duration)
-	if start_time: print(start_time)
+	if debug:
+		print("parsed values:")
+		print(new_attr)
+		print(duration)
+		if start_time: print(start_time)
 
 	return new_attr, duration, start_time	
 
 
 
 
-
-from pprint import pprint
-print("args:")
-pprint(args)
-print("")
-if args.params:
-	print("params:")
-	print(args.params)
+if debug:
+	from pprint import pprint
+	print("args:")
+	pprint(args)
 	print("")
+	if args.params:
+		print("params:")
+		print(args.params)
+		print("")
 
-#print("creating instance for friendly name:", args.device, "id", devices[args.device]['entity_id'])
+	print("creating instance for friendly name:", args.device, "id", devices[args.device]['entity_id'])
+
 device = Tradfri(devices[args.device]['entity_id'], debug=args.verbose)
 
-#pprint(device.get_attrs())
 
 func = getattr(device, args.action)
 if args.action == 'transition':
+	#special case
 	new_attr, duration, start_time = parse_transition_params(args.params)
 	resp = func(new_attr, duration, start_time)
 
 else:
 	if args.params:
-		if len(args.params) > 0:
-			resp = func(args.params)
+		resp = func(args.params)
 	else:
 		resp = func()
 
 if resp:
 	pprint(resp)
 
-#device.set_brightness(args.params)
-
-#device.toggle()
-
-
-
-
-#data = tradfri.get_attrs(devices['geo_desk']['entity_id'])
-#print(data['brightness'], data['color_temp'])
 
 
 
@@ -167,20 +161,4 @@ if resp:
 
 
 
-
-
-
-quit()
-
-#tradfri.debug = 1
-
-quit332 = """
-tradfri.transition(devices['geo_desk']['entity_id'], {"brightness": 0}, datetime.timedelta(seconds=7))
-tradfri.transition(devices['geo_desk']['entity_id'], {"brightness": 112}, datetime.timedelta(seconds=7))
-"""
-
-
-#transition(ent_id, {"color_temp": 2700}, datetime.timdelta(hours=2))
-
-#tradfri.set_brightness(ent_id, 192)
 
