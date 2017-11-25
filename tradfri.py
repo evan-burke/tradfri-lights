@@ -44,7 +44,7 @@ class Tradfri(object):
         
         try:
             if "Entity not found" in self.state['message']:
-                errstr = "Error creating instance: " + state['message']
+                errstr = "Error creating instance: " + self.state['message']
                 print(errstr)
                 raise Exception(errstr)
         except KeyError:
