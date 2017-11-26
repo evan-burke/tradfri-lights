@@ -133,16 +133,32 @@ device = Tradfri(devices[args.device]['entity_id'], debug=args.verbose)
 
 
 func = getattr(device, args.action)
+
 if args.action == 'transition':
 	#special case
 	new_attr, duration, start_time = parse_transition_params(args.params)
 	resp = func(new_attr, duration, start_time)
 
-else:
-	if args.params:
-		resp = func(args.params)
+elif args.action == 'lightswitch':
+	# convert to bool
+	test_arg = args.params[0].lower()
+	if test_arg == 'true' or test_arg == '1':
+		func_input = True
+	elif test_arg == 'false' or test_arg == '0':
+		func_input = False
 	else:
-		resp = func()
+		func_input = None
+		# lightswitch() function defaults to True if no input. 
+	
+	resp = func(func_input)
+
+elif args.action in ['set_brightness','set_color','mireds_to_kelvin','kelvin_to_mireds']:
+	resp = func(int(params[0]))
+
+# Above are just the commonly used functions.
+# There's nothing to stop user from calling a lower-level/internal function here, but args won't be used, so some may fail.
+else:
+	resp = func()
 
 if resp:
 	from pprint import pprint
