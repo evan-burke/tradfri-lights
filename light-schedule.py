@@ -153,7 +153,7 @@ elif args.action == 'lightswitch':
 	resp = func(func_input)
 
 elif args.action in ['set_brightness','set_color','mireds_to_kelvin','kelvin_to_mireds']:
-	resp = func(int(params[0]))
+	resp = func(int(args.params[0]))
 
 # Above are just the commonly used functions.
 # There's nothing to stop user from calling a lower-level/internal function here, but args won't be used, so some may fail.
