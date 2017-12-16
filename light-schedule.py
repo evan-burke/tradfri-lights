@@ -12,14 +12,22 @@ import dateutil.parser
 
 devices = { 
 	"office_table": { 
-#		"entity_id": "light.tradfri_bulb_e26_ws_opal_980lm"
 		"entity_id": "light.980_e26"
 	},
 
 	"geo_desk": {
-#		"entity_id": "light.tradfri_bulb_e12_ws_opal_400lm_2"
 		"entity_id": "light.400_e12"
+	},
+
+	"right_desk": {
+		"entity_id": "light.400lm_gu10"
+	},
+
+	"office_uplight": {
+		"entity_id": "light.950lm_e26_clear"
 	}
+
+
 }
 
 
@@ -153,7 +161,7 @@ elif args.action == 'lightswitch':
 	resp = func(func_input)
 
 elif args.action in ['set_brightness','set_color','mireds_to_kelvin','kelvin_to_mireds']:
-	resp = func(int(params[0]))
+	resp = func(int(args.params[0]))
 
 # Above are just the commonly used functions.
 # There's nothing to stop user from calling a lower-level/internal function here, but args won't be used, so some may fail.
