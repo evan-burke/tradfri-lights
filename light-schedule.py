@@ -12,20 +12,32 @@ import dateutil.parser
 
 devices = { 
 	"office_table": { 
-		"entity_id": "light.980_e26"
+		"entity_id": "light.office_table"
 	},
 
 	"geo_desk": {
-		"entity_id": "light.400_e12"
+		"entity_id": "light.geo_desk"
 	},
 
-	"right_desk": {
-		"entity_id": "light.400lm_gu10"
+	"desk_lamp": {
+		"entity_id": "light.desk_lamp"
 	},
 
 	"office_uplight": {
-		"entity_id": "light.950lm_e26_clear"
-	}
+		"entity_id": "light.floor_uplight"
+	},
+
+	"mon_right": {
+		"entity_id": "light.monitor_right"
+	},
+
+	"mon_left": {
+		"entity_id": "light.monitor_left"
+	},
+
+	"mon_group": {
+		"entity_id": "light.monitor"
+	},
 
 
 }
