@@ -1,0 +1,37 @@
+- action:
+  - data:
+      brightness: 110
+      entity_id: light.geo_desk
+      kelvin: 3250
+    service: LIGHT.TURN_ON
+  - data:
+      brightness: 254
+      entity_id: light.office_table
+      kelvin: 4000
+    service: LIGHT.TURN_ON
+  - data:
+      brightness: 200
+      entity_id: light.desk_lamp
+      kelvin: 3200
+    service: light.turn_on
+  - data:
+      brightness: 175
+      entity_id: light.floor_uplight
+      kelvin: 3700
+    service: light.turn_on
+  - data:
+      brightness: 165
+      entity_id: light.mon_group
+      kelvin: 3700
+    service: light.turn_on
+  alias: daytime_office
+  condition:
+  - after: 07:00:00
+    before: '18:00:00'
+    condition: time
+  id: '1511247890074'
+  trigger:
+  - entity_id: light.office_table
+    from: 'off'
+    platform: state
+    to: 'on'
