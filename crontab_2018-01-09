@@ -31,7 +31,8 @@
 01 17 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py desk_lamp transition color_temp=2800 minutes=181
 15 17 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py office_uplight transition color_temp=2900 minutes=181
 
-17 17 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_group transition color_temp=2200 minutes=360
+17 17 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_left transition color_temp=2200 minutes=360
+18 17 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_right transition color_temp=2200 minutes=360
 
 
 # dim to 2200k
@@ -48,7 +49,7 @@
 00 22 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py desk_lamp transition brightness=0 minutes=130
 30 21 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py office_uplight transition brightness=0 minutes=163
 
-17 21 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_group transition brightness=0 minutes=179
-
+17 21 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_left transition brightness=0 minutes=179
+17 21 * * * /usr/bin/python3 /home/pidax/light-timer/light-schedule.py mon_right transition brightness=0 minutes=179
 
 

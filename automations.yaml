@@ -21,7 +21,12 @@
     service: light.turn_on
   - data:
       brightness: 165
-      entity_id: light.mon_group
+      entity_id: light.monitor_left
+      kelvin: 3700
+    service: light.turn_on
+  - data:
+      brightness: 165
+      entity_id: light.monitor_right
       kelvin: 3700
     service: light.turn_on
   alias: daytime_office
