@@ -1,6 +1,6 @@
 import tradfri
-import datetime
-import argparse
+#import datetime
+#import argparse
 
 #import json
 
@@ -29,6 +29,7 @@ print("device, brightness, color_temp(k)")
 import time
 while True:
 
+# this uses the old pre-class version:
 
 	for i in devices:
 		attrs = tradfri.get_attrs(devices[i]['entity_id'])
