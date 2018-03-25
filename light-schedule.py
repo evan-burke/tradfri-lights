@@ -5,12 +5,15 @@ import argparse
 # used for 'transition' function
 #import pytimeparse
 import dateutil.parser
-
+import tradfri_cfg
 
 
 ### Define your tradfri devices here by friendly name and HomeAssistant entity id.
 
-devices = { 
+devices = tradfri_cfg.devices
+
+# moving this to tradfri_cfg instead
+old_devices = { 
 	"office_table": { 
 		"entity_id": "light.office_table"
 	},

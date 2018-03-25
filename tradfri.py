@@ -11,8 +11,9 @@ from pprint import pprint
 #   - https://community.home-assistant.io/t/improving-the-fluxer/23729
 
 
-# HomeAssistant base API URL.
-API_URL = "http://192.168.132.162:8123/api/"
+# HomeAssistant base API URL.. moving to tradfri_cfg instead
+old_API_URL = "http://192.168.132.162:8123/api/"
+API_URL = tradfri_cfg.API_URL
 
 
 
