@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 import datetime
 import pickle
 import win32api
@@ -12,6 +13,9 @@ from pathlib import Path
 # Windows only. Intended to be run on main desktop.
 
 # Make sure PROCESS_DIR is created before running this.
+
+# Use task scheduler and run with, e.g., 
+# C:\Users\me\Anaconda3\python.exe "C:\Users\me\Documents\homeassistant\lights-auto.py"
 
 # TODO:
 # write tests/debugging output
