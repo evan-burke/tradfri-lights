@@ -88,7 +88,7 @@ class Tradfri(object):
             self.attrs['kelvin'] = self.mireds_to_kelvin(self.attrs['color_temp'])
             return self.attrs
         else:
-            print('light is not on; unable to retrieve attributes')
+            print(datetime.datetime.now(), '\tlight is not on; unable to retrieve attributes')
             return False
 
 
@@ -240,7 +240,7 @@ class Tradfri(object):
         if not current_attrs:
             # then we can only transition if the attribute to change is 'brightness'.
             if "brightness" not in new_attr:
-                print('error: transition from off state only supported for "brightness" value')
+                print(datetime.datetime.now(), '\terror: transition from off state only supported for "brightness" value')
                 return 0
             else:
                 current_attrs = {'brightness': 0}
