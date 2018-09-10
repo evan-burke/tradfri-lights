@@ -110,6 +110,11 @@ class Tradfri(object):
             mireds = attrs['color_temp']
             return self.mireds_to_kelvin(mireds)
 
+
+    def get_color(self):
+        # alias because this is more consistent with get_brightness() function name
+        return self.get_temp_kelvin()
+
         
     @staticmethod
     def mireds_to_kelvin(mireds):
@@ -185,54 +190,21 @@ class Tradfri(object):
             and the 'duration' which is a timedelta.
             If start_time is not set, start immediately. 
             Otherwise, sleeps until start_time.
-
             """
+
         plan = self.plan_transition(new_attr, duration, start_time)
 
         if not plan:
             return 0
 
-        if self.debug > 0: pprint(plan['details'])
-
-        plan_start = plan['plan'][0]['step_start_time']
-        time_until_start = plan_start - datetime.datetime.now()
-
-        transition_type = plan['details']['transition_type']
-
-        def apply_attrs(transition_type, attrs):
-            if transition_type == "brightness":
-                data = self.set_brightness(attrs)
-            elif transition_type == "color_temp":
-                data = self.set_color(attrs)
-            return data
-
-        if self.debug > 0:
-            print("time until start", time_until_start)
-        time.sleep(time_until_start.total_seconds() - 0.1)
-
-        step_sleep = MIN_STEP_DURATION.total_seconds()
-
-        if self.debug > 0: print("starting transition")
-
-        for n, i in enumerate(plan['plan']):
-            if self.debug > 0: print(str(n)+", ", end="")
-            while datetime.datetime.now() < i['step_start_time']:
-                time.sleep(step_sleep)
-
-            # this translates color_temp to 'kelvin' input
-            apply_attrs(transition_type, i[transition_type])
-            if self.debug > 1: print({transition_type: i[transition_type]})
-
-            time.sleep(step_sleep)
-
-            if self.debug > 0 and n+1 >= plan['details']['steps']:
-                print("\n", i)
-
-        if self.debug > 0: print("transition completed after", n+1, "steps")
+        self.execute_transition(plan)
 
 
     def plan_transition(self, new_attr, duration, start_time=None):
-        """ x """
+        """ new_attr is a single-item dict containing type of attribute & new value,
+                e.g., {"brightness": 0}
+            duration is a timedelta
+            start_time is a datetime  """
         new_attr = self.sanity_check_values(new_attr)
 
         current_attrs = self.get_attrs()
@@ -357,6 +329,49 @@ class Tradfri(object):
             return {"steps": steps, "step_duration": step_duration, "step_change": step_change}
         else:
             return 0
+
+
+    def execute_transition(self, plan):
+        """Runs the transition specified by 'plan'."""
+        
+        if self.debug > 0: pprint(plan['details'])
+
+        plan_start = plan['plan'][0]['step_start_time']
+        time_until_start = plan_start - datetime.datetime.now()
+
+        transition_type = plan['details']['transition_type']
+
+        def apply_attrs(transition_type, attrs):
+            if transition_type == "brightness":
+                data = self.set_brightness(attrs)
+            elif transition_type == "color_temp":
+                data = self.set_color(attrs)
+            return data
+
+        if self.debug > 0:
+            print("time until start", time_until_start)
+        time.sleep(time_until_start.total_seconds() - 0.1)
+
+        step_sleep = MIN_STEP_DURATION.total_seconds()
+
+        if self.debug > 0: print("starting transition")
+
+        for n, i in enumerate(plan['plan']):
+            if self.debug > 0: print(str(n)+", ", end="")
+            while datetime.datetime.now() < i['step_start_time']:
+                time.sleep(step_sleep)
+
+            # this translates color_temp to 'kelvin' input
+            apply_attrs(transition_type, i[transition_type])
+            if self.debug > 1: print({transition_type: i[transition_type]})
+
+            time.sleep(step_sleep)
+
+            if self.debug > 0 and n+1 >= plan['details']['steps']:
+                print("\n", i)
+
+        if self.debug > 0: print("transition completed after", n+1, "steps")
+
 
 
     def lightswitch(self, power = True):
