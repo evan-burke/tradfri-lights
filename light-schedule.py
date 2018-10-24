@@ -10,11 +10,7 @@ import dateutil.parser
 
 ### Define your tradfri devices here by friendly name and HomeAssistant entity id.
 
-devices = { 
-	"office_table": { 
-		"entity_id": "light.office_table"
-	},
-
+devices = {
 	"geo_desk": {
 		"entity_id": "light.geo_desk"
 	},
@@ -23,16 +19,20 @@ devices = {
 		"entity_id": "light.desk_lamp"
 	},
 
-	"office_uplight": {
-		"entity_id": "light.floor_uplight"
+	"up_left": {
+		"entity_id": "light.up_left"
+	},
+
+	"up_right": {
+		"entity_id": "light.up_right"
 	},
 
 	"mon_right": {
-		"entity_id": "light.monitor_right"
+		"entity_id": "light.mon_right"
 	},
 
 	"mon_left": {
-		"entity_id": "light.monitor_left"
+		"entity_id": "light.mon_left"
 	},
 
 	"mon_group": {
