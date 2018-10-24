@@ -151,8 +151,8 @@ class Tradfri(object):
 
         data = self.apireq("services/light/turn_on", "post", attrs)
         # this doesn't usually return anyything other than http response code,
-        # but return just in case. 
-        # This is a 'requests' response. 
+        # but return just in case.
+        # This is a 'requests' response.
         return data
 
     def set_color(self, kelvin):
