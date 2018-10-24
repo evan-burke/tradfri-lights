@@ -1,4 +1,7 @@
-import tradfri
+
+# this was from pre-class version
+
+from tradfri import Tradfri
 #import datetime
 #import argparse
 
