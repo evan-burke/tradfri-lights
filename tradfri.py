@@ -57,7 +57,7 @@ class Tradfri(object):
             if str(data.status_code)[0] in ["4", "5"]:
                 errstr = (
                     "fatal error from API. status: "
-                    + data.status_code
+                    + str(data.status_code)
                     + " response text: "
                     + data.text
                 )
