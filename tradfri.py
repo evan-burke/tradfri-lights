@@ -110,6 +110,11 @@ class Tradfri(object):
             mireds = attrs['color_temp']
             return self.mireds_to_kelvin(mireds)
 
+
+    def get_color(self):
+        # alias because this is more consistent with get_brightness() function name
+        return self.get_temp_kelvin()
+
         
     @staticmethod
     def mireds_to_kelvin(mireds):
@@ -185,65 +190,47 @@ class Tradfri(object):
             and the 'duration' which is a timedelta.
             If start_time is not set, start immediately. 
             Otherwise, sleeps until start_time.
-
             """
+
         plan = self.plan_transition(new_attr, duration, start_time)
 
         if not plan:
             return 0
 
-        if self.debug > 0: pprint(plan['details'])
-
-        plan_start = plan['plan'][0]['step_start_time']
-        time_until_start = plan_start - datetime.datetime.now()
-
-        transition_type = plan['details']['transition_type']
-
-        def apply_attrs(transition_type, attrs):
-            if transition_type == "brightness":
-                data = self.set_brightness(attrs)
-            elif transition_type == "color_temp":
-                data = self.set_color(attrs)
-            return data
-
-        if self.debug > 0:
-            print("time until start", time_until_start)
-        time.sleep(time_until_start.total_seconds() - 0.1)
-
-        step_sleep = MIN_STEP_DURATION.total_seconds()
-
-        if self.debug > 0: print("starting transition")
-
-        for n, i in enumerate(plan['plan']):
-            if self.debug > 0: print(str(n)+", ", end="")
-            while datetime.datetime.now() < i['step_start_time']:
-                time.sleep(step_sleep)
-
-            # this translates color_temp to 'kelvin' input
-            apply_attrs(transition_type, i[transition_type])
-            if self.debug > 1: print({transition_type: i[transition_type]})
-
-            time.sleep(step_sleep)
-
-            if self.debug > 0 and n+1 >= plan['details']['steps']:
-                print("\n", i)
-
-        if self.debug > 0: print("transition completed after", n+1, "steps")
+        self.execute_transition(plan)
 
 
-    def plan_transition(self, new_attr, duration, start_time=None):
-        """ x """
+    def plan_transition(self, new_attr, duration=None, time_per_step=None, start_time=None, start_attr=None):
+        """ new_attr is a single-item dict containing type of attribute & new value,
+                e.g., {"brightness": 0}
+            duration is a timedelta, as is time_per_step. One or the other must be set. If both are set, uses 'duration'.
+            start_time is a datetime.
+            start_attrs will define the starting attributes to use; 
+                if not set, this will start from current attributes.
+
+        ### TODO: implment time_per_step 
+
+        """
         new_attr = self.sanity_check_values(new_attr)
 
-        current_attrs = self.get_attrs()
-        # ^ is False if bulb is off.
-        if not current_attrs:
-            # then we can only transition if the attribute to change is 'brightness'.
-            if "brightness" not in new_attr:
-                print(datetime.datetime.now(), '\terror: transition from off state only supported for "brightness" value')
-                return 0
-            else:
-                current_attrs = {'brightness': 0}
+        if duration is None and time_per_step is None:
+            raise Exception("Error: plan_transition() requires either 'duration' or 'time_per_step' to be set")
+
+
+        if start_attr:
+            current_attrs = start_attr
+        else:
+            # get actuals
+            current_attrs = self.get_attrs()
+            # ^ is False if bulb is off.
+            if not current_attrs:
+                # then we can only transition if the attribute to change is 'brightness'.
+                if "brightness" not in new_attr:
+                    print(datetime.datetime.now(), '\terror: transition from off state only supported for "brightness" value')
+                    return 0
+                else:
+                    current_attrs = {'brightness': 0}
+
 
         if not start_time:
             start_time = datetime.datetime.now() + datetime.timedelta(seconds=0.5)
@@ -277,7 +264,7 @@ class Tradfri(object):
         return transition_plan
 
 
-    def calculate_transition_steps(self, current_attrs, new_attr, duration):
+    def calculate_transition_steps(self, current_attrs, new_attr, duration=None, time_per_step=None):
         """ Used in transition() function. 
             Given current state (current_attrs), desired state (new_attr) and length
             of time to transition to it (duration), calculates how many steps to take.
@@ -293,6 +280,7 @@ class Tradfri(object):
         
         def calculate_steps_by_granularity(current_attrs, new_attr):  
             ## Calculate transition steps with respect to granularity of data available. 
+            # That is, if there are only 254 brightness levels available, we can't do 300 steps.
 
             # These set the properties for various transition types. 
             # Both of these start at 1. Brightness does not include '0' / off value.
@@ -335,28 +323,81 @@ class Tradfri(object):
                 return steps, total_change
 
 
-        def calculate_steps_by_time(steps, total_change, duration):
+        def calculate_steps_by_time(steps, total_change, duration=None, time_per_step=None):
             ## Calculate transition steps / step duration based on time.
+            # May further reduce # of steps for short duration transitions.
 
-            # minimum steps we can do in the specified transition duration (don't transition too fast):
-            duration_min_steps = math.ceil(duration / MIN_STEP_DURATION)
-            if self.debug > 0: print('duration min steps', duration_min_steps)
+            ## one of 'duration' or 'time_per_step' needs to be set.
+            # if both are set, uses duration. 
 
-            if duration_min_steps < steps:
-                steps = duration_min_steps
+            if duration: 
+                # minimum steps we can do in the specified transition duration (don't transition too fast):
+                duration_min_steps = math.ceil(duration / MIN_STEP_DURATION)
+                if self.debug > 0: print('duration min steps', duration_min_steps)
+
+                if duration_min_steps < steps:
+                    steps = duration_min_steps
+
+                step_duration = duration / steps
+
+            elif time_per_step:
+                step_duration = time_per_step
 
             step_change = total_change / steps
-            step_duration = duration / steps
-
             return steps, step_duration, step_change
 
 
         steps, total_change = calculate_steps_by_granularity(current_attrs, new_attr)
         if steps and total_change:
-            steps, step_duration, step_change = calculate_steps_by_time(steps, total_change, duration)
+            steps, step_duration, step_change = calculate_steps_by_time(steps, total_change, duration, time_per_step)
             return {"steps": steps, "step_duration": step_duration, "step_change": step_change}
         else:
             return 0
+
+
+    def execute_transition(self, plan):
+        """Runs the transition specified by 'plan'."""
+        
+        if self.debug > 0: pprint(plan['details'])
+
+        plan_start = plan['plan'][0]['step_start_time']
+        time_until_start = plan_start - datetime.datetime.now()
+
+        transition_type = plan['details']['transition_type']
+
+        def apply_attrs(transition_type, attrs):
+            if transition_type == "brightness":
+                data = self.set_brightness(attrs)
+            elif transition_type == "color_temp":
+                data = self.set_color(attrs)
+            return data
+
+        if time_until_start.total_seconds() > 0: # only attempt to sleep for a positive value
+            # wait until start time
+            if self.debug > 0:
+                print("time until start", time_until_start)
+            time.sleep(time_until_start.total_seconds() - 0.1)
+
+        step_sleep = MIN_STEP_DURATION.total_seconds()
+
+        if self.debug > 0: print("starting transition")
+
+        for n, i in enumerate(plan['plan']):
+            if self.debug > 0: print(str(n)+", ", end="")
+            while datetime.datetime.now() < i['step_start_time']:
+                time.sleep(step_sleep)
+
+            # this translates color_temp to 'kelvin' input
+            apply_attrs(transition_type, i[transition_type])
+            if self.debug > 1: print({transition_type: i[transition_type]})
+
+            time.sleep(step_sleep)
+
+            if self.debug > 0 and n+1 >= plan['details']['steps']:
+                print("\n", i)
+
+        if self.debug > 0: print("transition completed after", n+1, "steps")
+
 
 
     def lightswitch(self, power = True):
