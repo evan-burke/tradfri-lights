@@ -153,7 +153,8 @@ class Tradfri(object):
         cur_bit = 1
         for i in binary_val_str:
             if i == "1":
-                supported_features.append(feature_bitfield_map[cur_bit])
+                if str(cur_bit) in feature_bitfield_map:
+                    supported_features.append(feature_bitfield_map[str(cur_bit)])
             cur_bit = cur_bit * 2
 
         return supported_features
