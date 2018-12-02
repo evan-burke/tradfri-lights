@@ -1,9 +1,12 @@
-import requests
+""" Light automation module for IKEA Tradfri devices via HomeAssistant."""
+
+import configparser
+import datetime
 import json
 import math
 import time
-import datetime
 from pprint import pprint
+import requests
 
 
 # Welp. I may have needlessly rewritten this - https://home-assistant.io/components/switch.flux/
@@ -12,8 +15,8 @@ from pprint import pprint
 
 
 # HomeAssistant base API URL.
-API_URL = "http://192.168.132.162:8123/api/"
-
+# API_URL = "http://192.168.132.162:8123/api/"
+CONFIG_FILENAME = "tradfri.conf"
 
 # Min/max values for your light. These are for ikea TRADFRI white spectrum.
 MIN_BRIGHTNESS = 0
@@ -23,21 +26,24 @@ MAX_COLOR_TEMP_KELVIN = 4000
 
 # Updating too fast can cause flickering. Recommended 0.1-0.2, not less than 0.1.
 # Too high makes faster transitions stuttery as well, due to larger increases per step.
+# If HomeAssistant is slower to respond than this, this value
+#   may be significantly faster than actual min step duration.
 MIN_STEP_DURATION = datetime.timedelta(seconds=0.1)
 
 
 class Tradfri(object):
-    """etc."""
+    """ One class per individual light. """
 
-    def __init__(self, entity_id, debug=0):
-        self.entity_id = entity_id
+    def __init__(self, device_name, debug=0):
+        # get config
+        self.config = configparser.ConfigParser()
+        _ = self.config.read(CONFIG_FILENAME)
+        self.api_url = self.config["tradfri"]["api_url"]
+
+        self.device_name = device_name
         self.debug = debug
+        self.entity_id = self.get_entity(device_name)
         self.state = self.get_state()
-
-        # doing this dynamically requires 'importlib import import_module'
-        # so... just import it by default above either way.
-        # if self.debug:
-        #    from pprint import pprint
 
         try:
             if "Entity not found" in self.state["message"]:
@@ -48,7 +54,31 @@ class Tradfri(object):
             # if there's no 'message', call probably succeeded
             pass
 
+        # not quite right. HA returns a few attrs even if a light is off.
+        if self.state["state"] == "on":
+            self.attrs = self.state["attributes"]
+        else:
+            self.attrs = {}
+        # get supported features.
+        self.supported_features = self.parse_supported_features(
+            self.state["attributes"]
+        )
+
+    def get_entity(self, device_name):
+        """ Try to get the entity ID for the given device name. """
+
+        # Check if it matches anything in the device map.
+        device_map = json.loads(self.config["tradfri"]["device_map"])
+
+        if device_name in device_map:
+            return device_map["device_name"]
+
+        # Else, just try prepending "light" to the entity name.
+        return "light." + device_name
+
     def apireq(self, endpoint, req_type="get", post_data=None):
+        """ Make an API request aginst HomeAssistant. """
+
         def handle_errors(data):
             if self.debug and data.status_code != 200:
                 print(
@@ -64,7 +94,7 @@ class Tradfri(object):
                 raise Exception(errstr)
 
         if req_type == "get":
-            data = requests.get(API_URL + endpoint)
+            data = requests.get(self.api_url + endpoint)
             handle_errors(data)
             return data
         elif req_type == "post":
@@ -75,7 +105,7 @@ class Tradfri(object):
                 if type(post_data) is dict:
                     # convert to json
                     post_data = json.dumps(post_data)
-                data = requests.post(API_URL + endpoint, post_data)
+                data = requests.post(self.api_url + endpoint, post_data)
                 handle_errors(data)
                 return data
         else:
@@ -93,7 +123,8 @@ class Tradfri(object):
         state = self.get_state()
         if state["state"] == "on":
             self.attrs = state["attributes"]
-            self.attrs["kelvin"] = self.mireds_to_kelvin(self.attrs["color_temp"])
+            if "color_temp" in state["attributes"]:
+                self.attrs["kelvin"] = self.mireds_to_kelvin(self.attrs["color_temp"])
             return self.attrs
         else:
             print(
@@ -102,12 +133,35 @@ class Tradfri(object):
             )
             return False
 
+    def parse_supported_features(self, attrs):
+        """ Get supported features based on supported_features bitfield in attrs.
+            Features defined in HA components/light/__init__.py.
+            Returns list of supported features."""
+
+        # get map from config
+        # bf_raw = self.config["tradfri"]["feature_bitfield_map"]
+        feature_bitfield_map = json.loads(
+            self.config["tradfri"]["feature_bitfield_map"]
+        )
+
+        feature_value = attrs["supported_features"]
+        binary_val_str = bin(feature_value).replace("0b", "")[::-1]
+        # e.g., '100011'. Smallest bits first.
+
+        supported_features = []
+
+        cur_bit = 1
+        for i in binary_val_str:
+            if i == "1":
+                if str(cur_bit) in feature_bitfield_map:
+                    supported_features.append(feature_bitfield_map[str(cur_bit)])
+            cur_bit = cur_bit * 2
+
+        return supported_features
+
     def check_if_on(self):
         state = self.get_state()
-        if state["state"] == "on":
-            return True
-        else:
-            return False
+        return bool(state["state"] == "on")
 
     def get_temp_kelvin(self):
         """ Retrieves current bulb state and converts 'mireds' to kelvin.
@@ -115,7 +169,7 @@ class Tradfri(object):
             in the chain, which means returned value will almost never
             equal the value set via the API."""
         attrs = self.get_attrs()
-        if attrs:
+        if attrs and "color_temp" in attrs:
             mireds = attrs["color_temp"]
             return self.mireds_to_kelvin(mireds)
 
@@ -156,15 +210,30 @@ class Tradfri(object):
         return data
 
     def set_color(self, kelvin):
-        """ Sets color temperature of the light. 
+        """ Sets color temperature of the light.
         May allow you to set color temp outside of supported range of bulb: some bulbs
         do not reutrn an error, instead just setting bulb to closest supported temp."""
+        if "color_temp" not in self.supported_features:
+            errstr = (
+                "Current device "
+                + self.device_name
+                + " does not support color temperature changes."
+            )
+            raise Exception(errstr)
 
         data = self.set_attributes({"kelvin": kelvin})
         return data
 
     def set_brightness(self, brightness):
         """ Sets light brightness, in range 0-254. 0 is off. """
+
+        if "brightness" not in self.supported_features:
+            errstr = (
+                "Current device "
+                + self.device_name
+                + " does not support brightness changes."
+            )
+            raise Exception(errstr)
 
         data = self.set_attributes({"brightness": brightness})
         return data
@@ -189,7 +258,7 @@ class Tradfri(object):
         """ Highest-level function. Initiates a transition for the given
             entity_id, based on the target values contained in new_attr,
             and the 'duration' which is a timedelta.
-            If start_time is not set, start immediately. 
+            If start_time is not set, start immediately.
             Otherwise, sleeps until start_time.
             """
 
@@ -210,12 +279,13 @@ class Tradfri(object):
     ):
         """ new_attr is a single-item dict containing type of attribute & new value,
                 e.g., {"brightness": 0}
-            duration is a timedelta, as is time_per_step. One or the other must be set. If both are set, uses 'duration'.
+            duration is a timedelta, as is time_per_step. One or the other must be set.
+                If both are set, uses 'duration'.
             start_time is a datetime.
-            start_attrs will define the starting attributes to use; 
+            start_attrs will define the starting attributes to use;
                 if not set, this will start from current attributes.
 
-        ### TODO: implment time_per_step 
+        ### TODO: implment time_per_step
 
         """
         new_attr = self.sanity_check_values(new_attr)
@@ -303,6 +373,13 @@ class Tradfri(object):
 
             for key in new_attr:
                 if key == "color_temp":
+                    if "color_temp" not in self.supported_features:
+                        errstr = (
+                            "Current device "
+                            + self.device_name
+                            + " does not support color temperature changes."
+                        )
+                        raise Exception(errstr)
                     # convert to kelvin & store
                     kelvin = self.mireds_to_kelvin(current_attrs["color_temp"])
                     current_attrs["color_temp"] = kelvin

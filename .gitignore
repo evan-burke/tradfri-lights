@@ -1,4 +1,6 @@
 __pycache__/
 *.py[cod]
 spyder-scratch.py
-*/.ipynb_checkpoints/*.ipynb
+#.ipynb_checkpoints
+**/*.ipynb_checkpoints/
+# ^^ both of these work. the latter will match directories only.
