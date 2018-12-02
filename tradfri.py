@@ -44,10 +44,6 @@ class Tradfri(object):
         self.debug = debug
         self.entity_id = self.get_entity(device_name)
         self.state = self.get_state()
-        if self.state["state"] == "on":
-            self.attrs = self.state["attributes"]
-        else:
-            self.attrs = {}
 
         try:
             if "Entity not found" in self.state["message"]:
@@ -57,6 +53,16 @@ class Tradfri(object):
         except KeyError:
             # if there's no 'message', call probably succeeded
             pass
+
+        # not quite right. HA returns a few attrs even if a light is off.
+        if self.state["state"] == "on":
+            self.attrs = self.state["attributes"]
+        else:
+            self.attrs = {}
+        # get supported features.
+        self.supported_features = self.parse_supported_features(
+            self.state["attributes"]
+        )
 
     def get_entity(self, device_name):
         """ Try to get the entity ID for the given device name. """
@@ -127,6 +133,31 @@ class Tradfri(object):
             )
             return False
 
+    def parse_supported_features(self, attrs):
+        """ Get supported features based on supported_features bitfield in attrs.
+            Features defined in HA components/light/__init__.py.
+            Returns list of supported features."""
+
+        # get map from config
+        # bf_raw = self.config["tradfri"]["feature_bitfield_map"]
+        feature_bitfield_map = json.loads(
+            self.config["tradfri"]["feature_bitfield_map"]
+        )
+
+        feature_value = attrs["supported_features"]
+        binary_val_str = bin(feature_value).replace("0b", "")[::-1]
+        # e.g., '100011'. Smallest bits first.
+
+        supported_features = []
+
+        cur_bit = 1
+        for i in binary_val_str:
+            if i == "1":
+                supported_features.append(feature_bitfield_map[cur_bit])
+            cur_bit = cur_bit * 2
+
+        return supported_features
+
     def check_if_on(self):
         state = self.get_state()
         return bool(state["state"] == "on")
@@ -137,7 +168,7 @@ class Tradfri(object):
             in the chain, which means returned value will almost never
             equal the value set via the API."""
         attrs = self.get_attrs()
-        if attrs:
+        if attrs and "color_temp" in attrs:
             mireds = attrs["color_temp"]
             return self.mireds_to_kelvin(mireds)
 
@@ -178,15 +209,30 @@ class Tradfri(object):
         return data
 
     def set_color(self, kelvin):
-        """ Sets color temperature of the light. 
+        """ Sets color temperature of the light.
         May allow you to set color temp outside of supported range of bulb: some bulbs
         do not reutrn an error, instead just setting bulb to closest supported temp."""
+        if "color_temp" not in self.supported_features:
+            errstr = (
+                "Current device "
+                + self.device_name
+                + " does not support color temperature changes."
+            )
+            raise Exception(errstr)
 
         data = self.set_attributes({"kelvin": kelvin})
         return data
 
     def set_brightness(self, brightness):
         """ Sets light brightness, in range 0-254. 0 is off. """
+
+        if "brightness" not in self.supported_features:
+            errstr = (
+                "Current device "
+                + self.device_name
+                + " does not support brightness changes."
+            )
+            raise Exception(errstr)
 
         data = self.set_attributes({"brightness": brightness})
         return data
@@ -326,7 +372,7 @@ class Tradfri(object):
 
             for key in new_attr:
                 if key == "color_temp":
-                    if "color_temp" not in current_attrs:
+                    if "color_temp" not in self.supported_features:
                         errstr = (
                             "Current device "
                             + self.device_name
