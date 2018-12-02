@@ -1,49 +1,12 @@
-from tradfri import Tradfri
-import datetime
-import argparse
 
-# used for 'transition' function
-#import pytimeparse
+
+import argparse
+import datetime
 import dateutil.parser
 
+from tradfri import Tradfri
 
-
-### Define your tradfri devices here by friendly name and HomeAssistant entity id.
-
-devices = {
-	"geo_desk": {
-		"entity_id": "light.geo_desk"
-	},
-
-	"desk_lamp": {
-		"entity_id": "light.desk_lamp"
-	},
-
-	"up_left": {
-		"entity_id": "light.up_left"
-	},
-
-	"up_right": {
-		"entity_id": "light.up_right"
-	},
-
-	"mon_right": {
-		"entity_id": "light.mon_right"
-	},
-
-	"mon_left": {
-		"entity_id": "light.mon_left"
-	},
-
-	"mon_group": {
-		"entity_id": "light.monitor"
-	},
-
-
-}
-
-
-
+# Config
 transition_supported_attrs = ['brightness','color_temp']
 transition_supported_durations = ['second','seconds','minute','minutes','hour','hours']
 
@@ -67,19 +30,20 @@ parser.add_argument("device", help="Friendly name of the device to update.")
 parser.add_argument("action", help="Action to take on the specified device. See tradfri.py for supported actions.")
 parser.add_argument("params", nargs='*', default=None, help="Parameters for the specified action.")
 parser.add_argument("--verbose", "-v", default=0, type=int, choices=[1,2], help="Increase verbosity of output.")
+# ^ this actually passes debug switch to the tradfri class instance.
 args = parser.parse_args()
 
 # Most common actions:
 actions = """
-check_if_on()
-get_temp_kelvin()
-get_brightness()
-set_color(kelvin)
-set_brightness(brightness)
-transition(new_attr, duration, start_time=None)
-lightswitch(power = True)
-toggle()
-"""
+	check_if_on()
+	get_temp_kelvin()
+	get_brightness()
+	set_color(kelvin)
+	set_brightness(brightness)
+	transition(new_attr, duration, start_time=None)
+	lightswitch(power = True)
+	toggle()
+	"""
 
 # Transition is the special case. 
 # Need to parse new_attr, duration, and start_time.
@@ -99,7 +63,6 @@ def parse_transition_params(params):
 	else:
 		new_attr = { attr[0]: int(attr[1]) }
 		#value = attr[1]
-
 
 	# parse transition duration
 	dur = params[1].replace(" ", "").split("=")
@@ -136,6 +99,9 @@ def parse_transition_params(params):
 
 
 
+#### 
+####  MAIN
+#### 
 
 if debug:
 	from pprint import pprint
@@ -147,9 +113,9 @@ if debug:
 		print(args.params)
 		print("")
 
-	print("creating instance for friendly name:", args.device, "id", devices[args.device]['entity_id'])
+	print("creating instance for device name:", args.device)
 
-device = Tradfri(devices[args.device]['entity_id'], debug=args.verbose)
+device = Tradfri(args.device, debug=args.verbose)
 
 
 func = getattr(device, args.action)

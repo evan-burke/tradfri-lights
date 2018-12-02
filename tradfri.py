@@ -1,9 +1,13 @@
-import requests
+""" Light automation module for IKEA Tradfri devices via HomeAssistant."""
+
+import configparser
+import datetime
 import json
 import math
 import time
-import datetime
 from pprint import pprint
+import requests
+
 
 
 # Welp. I may have needlessly rewritten this - https://home-assistant.io/components/switch.flux/
@@ -12,8 +16,8 @@ from pprint import pprint
 
 
 # HomeAssistant base API URL.
-API_URL = "http://192.168.132.162:8123/api/"
-
+#API_URL = "http://192.168.132.162:8123/api/"
+CONFIG_FILENAME = "tradfri.conf"
 
 # Min/max values for your light. These are for ikea TRADFRI white spectrum.
 MIN_BRIGHTNESS = 0
@@ -23,21 +27,22 @@ MAX_COLOR_TEMP_KELVIN = 4000
 
 # Updating too fast can cause flickering. Recommended 0.1-0.2, not less than 0.1.
 # Too high makes faster transitions stuttery as well, due to larger increases per step.
+# If HomeAssistant is slower to respond than this, this may be significantly faster than actual min step duration.
 MIN_STEP_DURATION = datetime.timedelta(seconds=0.1)
 
 
 class Tradfri(object):
-    """etc."""
+    """ One class per individual light. """
 
-    def __init__(self, entity_id, debug=0):
-        self.entity_id = entity_id
+    def __init__(self, device_name, debug=0):
+        # get config
+        self.config = configparser.ConfigParser()
+        _ = self.config.read(CONFIG_FILENAME)
+        self.api_url = self.config['tradfri']['api_url']
+
+        self.entity_id = self.get_entity(device_name)
         self.debug = debug
         self.state = self.get_state()
-
-        # doing this dynamically requires 'importlib import import_module'
-        # so... just import it by default above either way.
-        # if self.debug:
-        #    from pprint import pprint
 
         try:
             if "Entity not found" in self.state["message"]:
@@ -47,6 +52,20 @@ class Tradfri(object):
         except KeyError:
             # if there's no 'message', call probably succeeded
             pass
+
+    def get_entity(self, device_name):
+        # try to get the entity ID for the given device name.
+
+        # Check if it matches anything in the device map.
+        device_map = json.loads(self.config['tradfri']['device_map'])
+
+        if device_name in device_map:
+            return device_map['device_name']
+
+        # Else, just try prepending "light" to the entity name.
+        else:
+            return "light." + device_name
+
 
     def apireq(self, endpoint, req_type="get", post_data=None):
         def handle_errors(data):
@@ -64,7 +83,7 @@ class Tradfri(object):
                 raise Exception(errstr)
 
         if req_type == "get":
-            data = requests.get(API_URL + endpoint)
+            data = requests.get(self.api_url + endpoint)
             handle_errors(data)
             return data
         elif req_type == "post":
@@ -75,7 +94,7 @@ class Tradfri(object):
                 if type(post_data) is dict:
                     # convert to json
                     post_data = json.dumps(post_data)
-                data = requests.post(API_URL + endpoint, post_data)
+                data = requests.post(self.api_url + endpoint, post_data)
                 handle_errors(data)
                 return data
         else:
