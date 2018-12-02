@@ -40,8 +40,9 @@ class Tradfri(object):
         _ = self.config.read(CONFIG_FILENAME)
         self.api_url = self.config["tradfri"]["api_url"]
 
-        self.entity_id = self.get_entity(device_name)
+        self.device_name = device_name
         self.debug = debug
+        self.entity_id = self.get_entity(device_name)
         self.state = self.get_state()
         if self.state["state"] == "on":
             self.attrs = self.state["attributes"]
@@ -116,7 +117,8 @@ class Tradfri(object):
         state = self.get_state()
         if state["state"] == "on":
             self.attrs = state["attributes"]
-            self.attrs["kelvin"] = self.mireds_to_kelvin(self.attrs["color_temp"])
+            if "color_temp" in state["attributes"]:
+                self.attrs["kelvin"] = self.mireds_to_kelvin(self.attrs["color_temp"])
             return self.attrs
         else:
             print(
@@ -324,6 +326,13 @@ class Tradfri(object):
 
             for key in new_attr:
                 if key == "color_temp":
+                    if "color_temp" not in current_attrs:
+                        errstr = (
+                            "Current device "
+                            + self.device_name
+                            + " does not support color temperature changes."
+                        )
+                        raise Exception(errstr)
                     # convert to kelvin & store
                     kelvin = self.mireds_to_kelvin(current_attrs["color_temp"])
                     current_attrs["color_temp"] = kelvin
