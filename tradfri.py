@@ -44,7 +44,7 @@ class Tradfri(object):
         self.debug = debug
         self.state = self.get_state()
         if self.state["state"] == "on":
-            self.attrs = state["attributes"]
+            self.attrs = self.state["attributes"]
         else:
             self.attrs = {}
 
