@@ -9,14 +9,13 @@ from pprint import pprint
 import requests
 
 
-
 # Welp. I may have needlessly rewritten this - https://home-assistant.io/components/switch.flux/
 # Though - it isn't perfect anyway.
 #   - https://community.home-assistant.io/t/improving-the-fluxer/23729
 
 
 # HomeAssistant base API URL.
-#API_URL = "http://192.168.132.162:8123/api/"
+# API_URL = "http://192.168.132.162:8123/api/"
 CONFIG_FILENAME = "tradfri.conf"
 
 # Min/max values for your light. These are for ikea TRADFRI white spectrum.
@@ -27,7 +26,8 @@ MAX_COLOR_TEMP_KELVIN = 4000
 
 # Updating too fast can cause flickering. Recommended 0.1-0.2, not less than 0.1.
 # Too high makes faster transitions stuttery as well, due to larger increases per step.
-# If HomeAssistant is slower to respond than this, this may be significantly faster than actual min step duration.
+# If HomeAssistant is slower to respond than this, this value
+#   may be significantly faster than actual min step duration.
 MIN_STEP_DURATION = datetime.timedelta(seconds=0.1)
 
 
@@ -38,11 +38,15 @@ class Tradfri(object):
         # get config
         self.config = configparser.ConfigParser()
         _ = self.config.read(CONFIG_FILENAME)
-        self.api_url = self.config['tradfri']['api_url']
+        self.api_url = self.config["tradfri"]["api_url"]
 
         self.entity_id = self.get_entity(device_name)
         self.debug = debug
         self.state = self.get_state()
+        if self.state["state"] == "on":
+            self.attrs = state["attributes"]
+        else:
+            self.attrs = {}
 
         try:
             if "Entity not found" in self.state["message"]:
@@ -54,20 +58,20 @@ class Tradfri(object):
             pass
 
     def get_entity(self, device_name):
-        # try to get the entity ID for the given device name.
+        """ Try to get the entity ID for the given device name. """
 
         # Check if it matches anything in the device map.
-        device_map = json.loads(self.config['tradfri']['device_map'])
+        device_map = json.loads(self.config["tradfri"]["device_map"])
 
         if device_name in device_map:
-            return device_map['device_name']
+            return device_map["device_name"]
 
         # Else, just try prepending "light" to the entity name.
-        else:
-            return "light." + device_name
-
+        return "light." + device_name
 
     def apireq(self, endpoint, req_type="get", post_data=None):
+        """ Make an API request aginst HomeAssistant. """
+
         def handle_errors(data):
             if self.debug and data.status_code != 200:
                 print(
@@ -123,10 +127,7 @@ class Tradfri(object):
 
     def check_if_on(self):
         state = self.get_state()
-        if state["state"] == "on":
-            return True
-        else:
-            return False
+        return bool(state["state"] == "on")
 
     def get_temp_kelvin(self):
         """ Retrieves current bulb state and converts 'mireds' to kelvin.
@@ -208,7 +209,7 @@ class Tradfri(object):
         """ Highest-level function. Initiates a transition for the given
             entity_id, based on the target values contained in new_attr,
             and the 'duration' which is a timedelta.
-            If start_time is not set, start immediately. 
+            If start_time is not set, start immediately.
             Otherwise, sleeps until start_time.
             """
 
@@ -229,12 +230,13 @@ class Tradfri(object):
     ):
         """ new_attr is a single-item dict containing type of attribute & new value,
                 e.g., {"brightness": 0}
-            duration is a timedelta, as is time_per_step. One or the other must be set. If both are set, uses 'duration'.
+            duration is a timedelta, as is time_per_step. One or the other must be set.
+                If both are set, uses 'duration'.
             start_time is a datetime.
-            start_attrs will define the starting attributes to use; 
+            start_attrs will define the starting attributes to use;
                 if not set, this will start from current attributes.
 
-        ### TODO: implment time_per_step 
+        ### TODO: implment time_per_step
 
         """
         new_attr = self.sanity_check_values(new_attr)
