@@ -129,7 +129,9 @@ class Tradfri(object):
         else:
             print(
                 datetime.datetime.now(),
-                "\tlight is not on; unable to retrieve attributes",
+                "\tlight '"
+                + self.device_name
+                + "' is not on; unable to retrieve attributes",
             )
             return False
 
@@ -139,7 +141,6 @@ class Tradfri(object):
             Returns list of supported features."""
 
         # get map from config
-        # bf_raw = self.config["tradfri"]["feature_bitfield_map"]
         feature_bitfield_map = json.loads(
             self.config["tradfri"]["feature_bitfield_map"]
         )
@@ -215,9 +216,9 @@ class Tradfri(object):
         do not reutrn an error, instead just setting bulb to closest supported temp."""
         if "color_temp" not in self.supported_features:
             errstr = (
-                "Current device "
+                "Current device '"
                 + self.device_name
-                + " does not support color temperature changes."
+                + "' does not support color temperature changes."
             )
             raise Exception(errstr)
 
