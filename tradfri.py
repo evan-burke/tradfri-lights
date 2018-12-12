@@ -14,9 +14,8 @@ import requests
 #   - https://community.home-assistant.io/t/improving-the-fluxer/23729
 
 
-# HomeAssistant base API URL.
-# API_URL = "http://192.168.132.162:8123/api/"
-CONFIG_FILENAME = "tradfri.conf"
+# Use full file path here.
+CONFIG_FILENAME = "/home/pidax/light-timer/tradfri.conf"
 
 # Min/max values for your light. These are for ikea TRADFRI white spectrum.
 MIN_BRIGHTNESS = 0
