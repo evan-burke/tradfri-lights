@@ -70,7 +70,7 @@ class Tradfri(object):
         device_map = json.loads(self.config["tradfri"]["device_map"])
 
         if device_name in device_map:
-            return device_map["device_name"]
+            return device_map[device_name]
 
         # Else, just try prepending "light" to the entity name.
         return "light." + device_name
