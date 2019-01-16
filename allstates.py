@@ -7,6 +7,7 @@ from pprint import pprint
 
 
 # purpose: quick way to get current states for all lights, and time since last update.
+# to be run on command line - sudo python3 allstates.py
 
 # todo: take lights as a list, insert dynamically into query.
 
