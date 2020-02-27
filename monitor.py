@@ -1,11 +1,7 @@
 
-# this was from pre-class version
 
 from tradfri import Tradfri
-#import datetime
-#import argparse
 
-#import json
 
 #Define your tradfri devices here by friendly name and HomeAssistant entity id.
 
@@ -22,17 +18,13 @@ devices = {
 # --------------
 
 
-
-#data = tradfri.get_attrs(devices['geo_desk']['entity_id'])
-#print(data['brightness'], data['color_temp'])
-
 print("device, brightness, color_temp(k)")
 
 
 import time
-while True:
+for _ in range(100):
 
-# this uses the old pre-class version:
+	# this uses the old procedural version
 
 	for i in devices:
 		attrs = tradfri.get_attrs(devices[i]['entity_id'])
